@@ -6,10 +6,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import TimeoutException
+from web_links import WEBSITES
 import os
 
 # Streamlit app URL from environment variable (or default)
-STREAMLIT_URL = os.environ.get("STREAMLIT_APP_URL", "https://benson-mugure-portfolio.streamlit.app/")
+# STREAMLIT_URL = os.environ.get("STREAMLIT_APP_URL", "https://benson-mugure-portfolio.streamlit.app/")
 
 def main():
     options = Options()
@@ -20,38 +21,40 @@ def main():
     options.add_argument('--window-size=1920,1080')
 
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-
-    try:
-        driver.get(STREAMLIT_URL)
-        print(f"Opened {STREAMLIT_URL}")
-
-        wait = WebDriverWait(driver, 15)
+    
+    for web_site in WEBSITES:
         try:
-            # Look for the wake-up button
-            button = wait.until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Yes, get this app back up')]"))
-            )
-            print("Wake-up button found. Clicking...")
-            button.click()
+            
+            driver.get(web_site)
+            print(f"Opened {web_site}")
 
-            # After clicking, check if it disappears
+            wait = WebDriverWait(driver, 15)
             try:
-                wait.until(EC.invisibility_of_element_located((By.XPATH, "//button[contains(text(),'Yes, get this app back up')]")))
-                print("Button clicked and disappeared ✅ (app should be waking up)")
+                # Look for the wake-up button
+                button = wait.until(
+                    EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Yes, get this app back up')]"))
+                )
+                print("Wake-up button found. Clicking...")
+                button.click()
+
+                # After clicking, check if it disappears
+                try:
+                    wait.until(EC.invisibility_of_element_located((By.XPATH, "//button[contains(text(),'Yes, get this app back up')]")))
+                    print("Button clicked and disappeared ✅ (app should be waking up)")
+                except TimeoutException:
+                    print("Button was clicked but did NOT disappear ❌ (possible failure)")
+                    exit(1)
+
             except TimeoutException:
-                print("Button was clicked but did NOT disappear ❌ (possible failure)")
-                exit(1)
+                # No button at all → app is assumed to be awake
+                print("No wake-up button found. Assuming app is already awake ✅")
 
-        except TimeoutException:
-            # No button at all → app is assumed to be awake
-            print("No wake-up button found. Assuming app is already awake ✅")
-
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-        exit(1)
-    finally:
-        driver.quit()
-        print("Script finished.")
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            exit(1)
+        finally:
+            driver.quit()
+            print("Script finished.")
 
 if __name__ == "__main__":
     main()

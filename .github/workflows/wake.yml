@@ -24,3 +24,5 @@ jobs:
 
       - name: Run Selenium script
         run: python main.py
+        env:
+          HEADLESS: "true"
